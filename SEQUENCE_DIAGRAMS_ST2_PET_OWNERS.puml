@@ -1,0 +1,521 @@
+!theme plain
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+skinparam sequenceLifeLineBorderColor #000000
+skinparam sequenceActorBorderColor #1976D2
+skinparam sequenceParticipantBorderColor #424242
+
+' ========================================
+' Use Case 1: Sign Up
+' ========================================
+@startuml UC1_SignUp
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC1: Sign Up
+
+actor User as "Pet Owner"
+participant "Sign Up Page" as SignUpPage
+participant "API: /api/auth/signup" as SignupAPI
+database "Database" as DB
+participant "localStorage" as Storage
+
+User -> SignUpPage: Fill form and submit
+activate SignUpPage
+SignUpPage -> SignUpPage: Validate input
+
+SignUpPage -> SignupAPI: POST signup request
+activate SignupAPI
+SignupAPI -> SignupAPI: Hash password with bcrypt
+SignupAPI -> DB: Create user record
+activate DB
+DB --> SignupAPI: User created
+deactivate DB
+SignupAPI --> SignUpPage: Return user data
+deactivate SignupAPI
+
+SignUpPage -> Storage: Store user session
+activate Storage
+deactivate Storage
+SignUpPage --> User: Redirect to dashboard
+deactivate SignUpPage
+@enduml
+
+' ========================================
+' Use Case 2: Sign In
+' ========================================
+@startuml UC2_SignIn
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC2: Sign In
+
+actor User as "Pet Owner"
+participant "Login Page" as LoginPage
+participant "API: /api/auth/login" as LoginAPI
+database "Database" as DB
+participant "localStorage" as Storage
+
+User -> LoginPage: Enter credentials and submit
+activate LoginPage
+LoginPage -> LoginAPI: POST login request
+activate LoginAPI
+
+LoginAPI -> DB: Find user by email
+activate DB
+DB --> LoginAPI: User data
+deactivate DB
+LoginAPI -> LoginAPI: Verify password with bcrypt
+LoginAPI --> LoginPage: Return user data
+deactivate LoginAPI
+
+LoginPage -> Storage: Store user session
+activate Storage
+deactivate Storage
+LoginPage --> User: Redirect to dashboard
+deactivate LoginPage
+@enduml
+
+' ========================================
+' Use Case 3: Reset Password
+' ========================================
+@startuml UC3_ResetPassword
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC3: Reset Password
+
+actor User as "Pet Owner"
+participant "Reset Password Page" as ResetPage
+participant "API: /api/auth/reset-password" as ResetAPI
+database "Database" as DB
+
+User -> ResetPage: Request password reset
+activate ResetPage
+ResetPage -> ResetAPI: POST reset request with email
+activate ResetAPI
+
+ResetAPI -> ResetAPI: Generate reset token
+ResetAPI -> DB: Store token (expires in 24h)
+activate DB
+DB --> ResetAPI: Token stored
+deactivate DB
+ResetAPI --> ResetPage: Send reset link email
+deactivate ResetAPI
+
+... User clicks reset link ...
+
+User -> ResetPage: Enter new password
+ResetPage -> ResetAPI: POST new password with token
+activate ResetAPI
+ResetAPI -> ResetAPI: Validate token and hash password
+ResetAPI -> DB: Update password
+activate DB
+DB --> ResetAPI: Password updated
+deactivate DB
+ResetAPI --> ResetPage: Return success
+deactivate ResetAPI
+
+ResetPage --> User: Redirect to login
+deactivate ResetPage
+@enduml
+
+' ========================================
+' Use Case 4: Update Profile
+' ========================================
+@startuml UC4_UpdateProfile
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC4: Update Profile
+
+actor User as "Pet Owner"
+participant "Profile Page" as ProfilePage
+participant "API: /api/users/[id]" as UserAPI
+database "Database" as DB
+participant "localStorage" as Storage
+
+User -> ProfilePage: Update profile info and submit
+activate ProfilePage
+ProfilePage -> UserAPI: PUT /api/users/[id]
+activate UserAPI
+
+UserAPI -> DB: Update user record
+activate DB
+DB --> UserAPI: Return updated user
+deactivate DB
+UserAPI --> ProfilePage: Return updated user
+deactivate UserAPI
+
+ProfilePage -> Storage: Update user session
+activate Storage
+deactivate Storage
+ProfilePage --> User: Display success message
+deactivate ProfilePage
+@enduml
+
+' ========================================
+' Use Case 5: Create Pet Profile
+' ========================================
+@startuml UC5_CreatePetProfile
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC5: Create Pet Profile
+
+actor User as "Pet Owner"
+participant "Pets Page" as PetsPage
+participant "API: /api/upload" as UploadAPI
+participant "API: /api/pets" as PetAPI
+database "Database" as DB
+
+User -> PetsPage: Fill pet form and upload photo (optional)
+activate PetsPage
+
+alt Photo uploaded
+    PetsPage -> UploadAPI: POST upload image
+    activate UploadAPI
+    UploadAPI --> PetsPage: Return image URL
+    deactivate UploadAPI
+end
+
+PetsPage -> PetAPI: POST /api/pets
+activate PetAPI
+PetAPI -> PetAPI: Generate pet code (PET-XXXXX)
+PetAPI -> DB: Create pet record
+activate DB
+DB --> PetAPI: Return created pet
+deactivate DB
+PetAPI --> PetsPage: Return pet data
+deactivate PetAPI
+
+PetsPage --> User: Display success message
+deactivate PetsPage
+@enduml
+
+' ========================================
+' Use Case 6: View Pet Profile
+' ========================================
+@startuml UC6_ViewPetProfile
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC6: View Pet Profile
+
+actor User as "Pet Owner"
+participant "Pets Page" as PetsPage
+participant "API: /api/pets" as PetAPI
+database "Database" as DB
+
+User -> PetsPage: Navigate to pets page
+activate PetsPage
+PetsPage -> PetAPI: GET /api/pets?userId=xxx
+activate PetAPI
+
+PetAPI -> DB: Query user's pets
+activate DB
+DB --> PetAPI: Return pets list
+deactivate DB
+PetAPI --> PetsPage: Return pets data
+deactivate PetAPI
+
+PetsPage --> User: Display pet profiles
+deactivate PetsPage
+@enduml
+
+' ========================================
+' Use Case 7: View Medical Records
+' ========================================
+@startuml UC7_ViewMedicalRecords
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC7: View Medical Records
+
+actor User as "Pet Owner"
+participant "Pet Profile Page" as PetPage
+participant "API: /api/pets/[id]/medical-records" as MedicalAPI
+database "Database" as DB
+
+User -> PetPage: View medical records
+activate PetPage
+PetPage -> MedicalAPI: GET /api/pets/[id]/medical-records
+activate MedicalAPI
+
+MedicalAPI -> DB: Query all medical records
+activate DB
+DB --> MedicalAPI: Return records\n(vaccinations, dewormings, visits, weight)
+deactivate DB
+MedicalAPI --> PetPage: Return medical records
+deactivate MedicalAPI
+
+PetPage --> User: Display medical records
+deactivate PetPage
+@enduml
+
+' ========================================
+' Use Case 8: Browse Products
+' ========================================
+@startuml UC8_BrowseProducts
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC8: Browse Products
+
+actor User as "Pet Owner"
+participant "Shop Page" as ShopPage
+participant "API: /api/products" as ProductAPI
+database "Database" as DB
+
+User -> ShopPage: Navigate to shop page
+activate ShopPage
+ShopPage -> ProductAPI: GET /api/products (with filters)
+activate ProductAPI
+
+ProductAPI -> DB: Query products
+activate DB
+DB --> ProductAPI: Return products list
+deactivate DB
+ProductAPI --> ShopPage: Return products
+deactivate ProductAPI
+
+ShopPage --> User: Display product cards
+deactivate ShopPage
+@enduml
+
+' ========================================
+' Use Case 9: Add to Cart
+' ========================================
+@startuml UC9_AddToCart
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC9: Add to Cart
+
+actor User as "Pet Owner"
+participant "Product Page" as ProductPage
+participant "Recoil Cart State" as CartState
+
+User -> ProductPage: Click "Add to Cart"
+activate ProductPage
+ProductPage -> CartState: Add product to cart
+activate CartState
+CartState --> ProductPage: Cart updated
+deactivate CartState
+ProductPage --> User: Display success message
+deactivate ProductPage
+@enduml
+
+' ========================================
+' Use Case 10: Place Order
+' ========================================
+@startuml UC10_PlaceOrder
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC10: Place Order
+
+actor User as "Pet Owner"
+participant "Checkout Page" as CheckoutPage
+participant "Recoil Cart State" as CartState
+participant "API: /api/orders" as OrderAPI
+database "Database" as DB
+
+User -> CheckoutPage: Fill checkout form and submit
+activate CheckoutPage
+CheckoutPage -> CartState: Read cart items
+activate CartState
+CartState --> CheckoutPage: Return cart items
+deactivate CartState
+
+CheckoutPage -> OrderAPI: POST /api/orders
+activate OrderAPI
+OrderAPI -> DB: Create order (status=pending)
+activate DB
+DB --> OrderAPI: Return created order
+deactivate DB
+OrderAPI -> DB: Decrease product stock
+activate DB
+DB --> OrderAPI: Stock updated
+deactivate DB
+OrderAPI --> CheckoutPage: Return order confirmation
+deactivate OrderAPI
+
+CheckoutPage -> CartState: Clear cart
+activate CartState
+deactivate CartState
+CheckoutPage --> User: Redirect to success page
+deactivate CheckoutPage
+@enduml
+
+' ========================================
+' Use Case 11: View Order History
+' ========================================
+@startuml UC11_ViewOrderHistory
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC11: View Order History
+
+actor User as "Pet Owner"
+participant "Orders Page" as OrdersPage
+participant "API: /api/orders" as OrderAPI
+database "Database" as DB
+
+User -> OrdersPage: Navigate to orders page
+activate OrdersPage
+OrdersPage -> OrderAPI: GET /api/orders?userId=xxx
+activate OrderAPI
+
+OrderAPI -> DB: Query user's orders
+activate DB
+DB --> OrderAPI: Return orders list
+deactivate DB
+OrderAPI --> OrdersPage: Return orders with details
+deactivate OrderAPI
+
+OrdersPage --> User: Display orders list
+deactivate OrdersPage
+@enduml
+
+' ========================================
+' Use Case 12: Book Appointment
+' ========================================
+@startuml UC12_BookAppointment
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC12: Book Appointment
+
+actor User as "Pet Owner"
+participant "Appointments Page" as AppointmentsPage
+participant "API: /api/pets" as PetAPI
+participant "API: /api/appointments" as AppointmentAPI
+database "Database" as DB
+
+User -> AppointmentsPage: Navigate to appointments page
+activate AppointmentsPage
+AppointmentsPage -> PetAPI: GET /api/pets?userId=xxx
+activate PetAPI
+PetAPI -> DB: Query user's pets
+activate DB
+DB --> PetAPI: Return pets list
+deactivate DB
+PetAPI --> AppointmentsPage: Return pets list
+deactivate PetAPI
+
+User -> AppointmentsPage: Fill appointment form and submit
+AppointmentsPage -> AppointmentAPI: POST /api/appointments
+activate AppointmentAPI
+AppointmentAPI -> DB: Create appointment (status=upcoming)
+activate DB
+DB --> AppointmentAPI: Return created appointment
+deactivate DB
+AppointmentAPI --> AppointmentsPage: Return appointment data
+deactivate AppointmentAPI
+
+AppointmentsPage --> User: Display success message
+deactivate AppointmentsPage
+@enduml
+
+' ========================================
+' Use Case 13: View Appointments
+' ========================================
+@startuml UC13_ViewAppointments
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC13: View Appointments
+
+actor User as "Pet Owner"
+participant "Appointments Page" as AppointmentsPage
+participant "API: /api/appointments" as AppointmentAPI
+database "Database" as DB
+
+User -> AppointmentsPage: Navigate to appointments page
+activate AppointmentsPage
+AppointmentsPage -> AppointmentAPI: GET /api/appointments?userId=xxx
+activate AppointmentAPI
+
+AppointmentAPI -> DB: Query user's appointments
+activate DB
+DB --> AppointmentAPI: Return appointments list
+deactivate DB
+AppointmentAPI --> AppointmentsPage: Return appointments with details
+deactivate AppointmentAPI
+
+AppointmentsPage --> User: Display appointments list
+deactivate AppointmentsPage
+@enduml
+
+' ========================================
+' Use Case 14: Book Hotel Room
+' ========================================
+@startuml UC14_BookHotelRoom
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC14: Book Hotel Room
+
+actor User as "Pet Owner"
+participant "Hotel Booking Page" as HotelPage
+participant "API: /api/hotel/rooms" as RoomAPI
+participant "API: /api/hotel/reservations" as ReservationAPI
+database "Database" as DB
+
+User -> HotelPage: Fill booking form and submit
+activate HotelPage
+HotelPage -> RoomAPI: GET /api/hotel/rooms?type=xxx
+activate RoomAPI
+RoomAPI --> HotelPage: Return available rooms
+deactivate RoomAPI
+
+HotelPage -> ReservationAPI: POST /api/hotel/reservations
+activate ReservationAPI
+ReservationAPI -> DB: Check availability and create reservation
+activate DB
+DB --> ReservationAPI: Return created reservation
+deactivate DB
+ReservationAPI -> DB: Update room status to OCCUPIED
+activate DB
+deactivate DB
+ReservationAPI --> HotelPage: Return reservation
+deactivate ReservationAPI
+
+HotelPage --> User: Display success message
+deactivate HotelPage
+@enduml
+
+' ========================================
+' Use Case 15: View Reservations
+' ========================================
+@startuml UC15_ViewReservations
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC15: View Reservations
+
+actor User as "Pet Owner"
+participant "Reservations Page" as ReservationsPage
+participant "API: /api/hotel/reservations" as ReservationAPI
+database "Database" as DB
+
+User -> ReservationsPage: Navigate to reservations page
+activate ReservationsPage
+ReservationsPage -> ReservationAPI: GET /api/hotel/reservations?status=xxx
+activate ReservationAPI
+
+ReservationAPI -> DB: Query reservations by status
+activate DB
+DB --> ReservationAPI: Return reservations list
+deactivate DB
+ReservationAPI --> ReservationsPage: Return reservations
+deactivate ReservationAPI
+
+ReservationsPage -> ReservationsPage: Filter reservations by userId
+ReservationsPage --> User: Display reservations list
+deactivate ReservationsPage
+@enduml
+
+

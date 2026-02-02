@@ -1,0 +1,64 @@
+@startuml Use Case Diagram - Pet Owners
+!theme plain
+skinparam usecase {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam actor {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam rectangle {
+    BackgroundColor white
+    BorderColor #424242
+    FontSize 13
+    FontStyle bold
+}
+
+title Use Case Diagram - Pet Owners / Registered Users (ST2)
+
+left to right direction
+
+actor "ST2 : Pet Owners" as User
+
+rectangle System {
+    usecase "Sign Up" as UC1
+    usecase "Sign In" as UC2
+    usecase "Reset Password" as UC3
+    usecase "Update Profile" as UC4
+    usecase "Create Pet Profile" as UC5
+    usecase "View Pet Profile" as UC6
+    usecase "View Medical Records" as UC7
+    usecase "Browse Products" as UC8
+    usecase "Add to Cart" as UC9
+    usecase "Place Order" as UC10
+    usecase "View Order History" as UC11
+    usecase "Book Appointment" as UC12
+    usecase "View Appointments" as UC13
+    usecase "Book Hotel Room" as UC14
+    usecase "View Reservations" as UC15
+}
+
+User --> UC1
+User --> UC2
+User --> UC3
+User --> UC4
+User --> UC5
+User --> UC6
+User --> UC7
+User --> UC8
+User --> UC9
+User --> UC10
+User --> UC11
+User --> UC12
+User --> UC13
+User --> UC14
+User --> UC15
+
+@enduml

@@ -1,0 +1,56 @@
+@startuml Use Case Diagram - Guest Users
+!theme plain
+skinparam usecase {
+    BackgroundColor #E3F2FD
+    BorderColor #1976D2
+    FontSize 12
+    FontStyle bold
+}
+
+skinparam actor {
+    BackgroundColor #FFF9C4
+    BorderColor #F57F17
+    FontSize 14
+    FontStyle bold
+}
+
+skinparam rectangle {
+    BackgroundColor white
+    BorderColor #424242
+    FontSize 13
+    FontStyle bold
+}
+
+title Use Case Diagram - Guest Users (ST3)
+
+left to right direction
+
+actor "ST3 : Guest Users" as Guest
+
+rectangle System {
+    usecase "Browse VetVoge" as UC1
+    usecase "View Clinic Cards" as UC2
+    usecase "View Clinic Landing Page" as UC3
+    usecase "View Pet Adoption Listings" as UC4
+    usecase "Post Pet for Adoption" as UC5
+    usecase "Upload Pet Images" as UC6
+    usecase "Browse Products" as UC7
+    usecase "View Product Details" as UC8
+    usecase "Add to Cart" as UC9
+    usecase "Checkout as Guest" as UC10
+    usecase "Place Order" as UC11
+}
+
+Guest --> UC1
+Guest --> UC2
+Guest --> UC3
+Guest --> UC4
+Guest --> UC5
+Guest --> UC6
+Guest --> UC7
+Guest --> UC8
+Guest --> UC9
+Guest --> UC10
+Guest --> UC11
+
+@enduml

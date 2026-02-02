@@ -1,0 +1,135 @@
+@startuml Class Diagram
+!theme plain
+skinparam class {
+    BackgroundColor lightblue
+    BorderColor black
+}
+
+title Class Diagram - VetVoge & Eagle's Vet Clinic
+
+class User {
+    +id: String
+    +email: String
+    +password: String
+    +name: String
+    +phone: String
+    +role: String
+    +createdAt: DateTime
+}
+
+class Pet {
+    +id: String
+    +petCode: String
+    +name: String
+    +species: String
+    +breed: String
+    +gender: String
+    +birthDate: DateTime
+    +photo: String
+}
+
+class Product {
+    +id: String
+    +name: String
+    +slug: String
+    +description: String
+    +price: Float
+    +image: String
+    +stock: Int
+}
+
+class Category {
+    +id: String
+    +name: String
+    +slug: String
+    +image: String
+}
+
+class Order {
+    +id: String
+    +customerName: String
+    +customerEmail: String
+    +customerPhone: String
+    +total: Float
+    +status: String
+    +paymentMethod: String
+    +createdAt: DateTime
+}
+
+class OrderItem {
+    +id: String
+    +quantity: Int
+    +price: Float
+}
+
+class Appointment {
+    +id: String
+    +appointmentDate: DateTime
+    +appointmentTime: String
+    +reason: String
+    +status: String
+    +completionPrice: Float
+    +createdAt: DateTime
+}
+
+class HotelRoom {
+    +id: String
+    +roomNumber: Int
+    +type: String
+    +status: String
+}
+
+class HotelReservation {
+    +id: String
+    +checkIn: DateTime
+    +checkOut: DateTime
+    +status: String
+    +totalNights: Int
+    +total: Float
+    +extraServices: JSON
+}
+
+class PetAdoption {
+    +id: String
+    +petName: String
+    +description: String
+    +phoneNumber: String
+    +area: String
+    +images: String
+    +status: String
+}
+
+class Vaccination {
+    +id: String
+    +name: String
+    +date: DateTime
+    +nextDue: DateTime
+}
+
+class ClinicVisit {
+    +id: String
+    +visitDate: DateTime
+    +reason: String
+    +diagnosis: String
+    +treatment: String
+}
+
+' Relationships
+User "1" --> "*" Pet : owns
+User "1" --> "*" Order : places
+User "1" --> "*" Appointment : books
+User "1" --> "*" HotelReservation : reserves
+
+Category "1" --> "*" Product : categorizes
+
+Order "1" --> "*" OrderItem : contains
+OrderItem "*" --> "1" Product : references
+
+Pet "1" --> "*" Vaccination : has
+Pet "1" --> "*" ClinicVisit : has
+Pet "1" --> "*" HotelReservation : books
+
+HotelRoom "1" --> "*" HotelReservation : hosts
+
+@enduml
+

@@ -1,0 +1,814 @@
+!theme plain
+
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+skinparam sequenceLifeLineBorderColor #000000
+skinparam sequenceActorBorderColor #1976D2
+skinparam sequenceParticipantBorderColor #424242
+
+' ========================================
+' Use Case 1: View Dashboard
+' ========================================
+@startuml UC1_ViewDashboard
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC1: View Dashboard
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/dashboard" as API
+database "Database\n(Prisma)" as DB
+participant "localStorage" as Storage
+
+Admin -> Dashboard: Navigate to /admin/dashboard
+activate Dashboard
+
+Dashboard -> Storage: Read activeTab from localStorage
+activate Storage
+Storage --> Dashboard: Return activeTab (or null)
+deactivate Storage
+
+Dashboard -> API: GET /api/admin/dashboard/metrics
+activate API
+API -> DB: Query orders count by status
+activate DB
+DB --> API: Orders data
+deactivate DB
+API -> DB: Query appointments count by status
+activate DB
+DB --> API: Appointments data
+deactivate DB
+API -> DB: Query hotel reservations count
+activate DB
+DB --> API: Reservations data
+deactivate DB
+API --> Dashboard: Return metrics data
+deactivate API
+
+Dashboard -> Storage: Store activeTab in localStorage
+activate Storage
+deactivate Storage
+
+Dashboard --> Admin: Display dashboard with tabs\nand analytics cards
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 2: View Analytics
+' ========================================
+@startuml UC2_ViewAnalytics
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC2: View Analytics
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/analytics" as API
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Click "Analytics" tab
+activate Dashboard
+
+Dashboard -> API: GET /api/admin/analytics?period=month
+activate API
+
+API -> DB: Query completed orders (revenue)
+activate DB
+DB --> API: Completed orders data
+deactivate DB
+
+API -> DB: Query completed appointments with price
+activate DB
+DB --> API: Appointments data
+deactivate DB
+
+API -> DB: Query checked-out hotel reservations
+activate DB
+DB --> API: Hotel reservations data
+deactivate DB
+
+API -> DB: Query page views and product views
+activate DB
+DB --> API: Analytics tracking data
+deactivate DB
+
+API -> DB: Query unique session IDs
+activate DB
+DB --> API: Visitor count
+deactivate DB
+
+API -> DB: Query top products by views
+activate DB
+DB --> API: Top products data
+deactivate DB
+
+API --> Dashboard: Return analytics data\n(revenue, statistics, views)
+deactivate API
+
+Dashboard --> Admin: Display analytics dashboard\nwith revenue breakdown and statistics
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 3: View Revenue Reports
+' ========================================
+@startuml UC3_ViewRevenueReports
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC3: View Revenue Reports
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/analytics/revenue" as API
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Click "Revenue Timeline"
+activate Dashboard
+
+Dashboard -> API: GET /api/admin/analytics/revenue?period=month
+activate API
+
+API -> DB: Query completed orders with dates
+activate DB
+DB --> API: Order revenue data
+deactivate DB
+
+API -> DB: Query completed appointments with prices
+activate DB
+DB --> API: Appointment revenue data
+deactivate DB
+
+API -> DB: Query checked-out reservations with totals
+activate DB
+DB --> API: Hotel revenue data
+deactivate DB
+
+API -> API: Calculate revenue breakdown\nby source and timeline
+API --> Dashboard: Return revenue timeline data
+deactivate API
+
+Dashboard --> Admin: Display revenue timeline modal\nwith detailed breakdown
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 4: Create Product
+' ========================================
+@startuml UC4_CreateProduct
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC4: Create Product
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/upload" as UploadAPI
+participant "Cloudinary" as Cloudinary
+participant "API: /api/admin/products" as ProductAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Fill product form\n(name, description, price, images, stock, category)
+activate Dashboard
+
+Dashboard -> Dashboard: Validate form data
+
+Admin -> Dashboard: Click "Create Product"
+Dashboard -> UploadAPI: POST /api/upload (for each image)
+activate UploadAPI
+UploadAPI -> UploadAPI: Validate file type and size
+UploadAPI -> Cloudinary: Upload image file
+activate Cloudinary
+Cloudinary --> UploadAPI: Return image URL
+deactivate Cloudinary
+UploadAPI --> Dashboard: Return image URL
+deactivate UploadAPI
+
+Dashboard -> ProductAPI: POST /api/admin/products
+activate ProductAPI
+ProductAPI -> ProductAPI: Generate slug from name
+ProductAPI -> DB: Create product record
+activate DB
+note right: Store image URLs as\ncomma-separated string
+DB --> ProductAPI: Return created product
+deactivate DB
+ProductAPI --> Dashboard: Return product data
+deactivate ProductAPI
+
+Dashboard --> Admin: Display success message\nand refresh products list
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 5: Update Product
+' ========================================
+@startuml UC5_UpdateProduct
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC5: Update Product
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/upload" as UploadAPI
+participant "Cloudinary" as Cloudinary
+participant "API: /api/admin/products/[id]" as ProductAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Edit product details
+activate Dashboard
+
+Admin -> Dashboard: Optionally upload new images
+Dashboard -> UploadAPI: POST /api/upload (if new images)
+activate UploadAPI
+UploadAPI -> Cloudinary: Upload new images
+activate Cloudinary
+Cloudinary --> UploadAPI: Return image URLs
+deactivate Cloudinary
+UploadAPI --> Dashboard: Return image URLs
+deactivate UploadAPI
+
+Admin -> Dashboard: Click "Update Product"
+Dashboard -> ProductAPI: PUT /api/admin/products/[id]
+activate ProductAPI
+
+ProductAPI -> ProductAPI: Check if name changed
+
+alt Name changed
+    ProductAPI -> ProductAPI: Regenerate slug from new name
+end
+
+ProductAPI -> DB: Update product record
+activate DB
+note right: Update name, description,\nprice, images, stock, category
+DB --> ProductAPI: Return updated product
+deactivate DB
+
+ProductAPI --> Dashboard: Return updated product
+deactivate ProductAPI
+
+Dashboard --> Admin: Display success message\nand refresh product info
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 6: Delete Product
+' ========================================
+@startuml UC6_DeleteProduct
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC6: Delete Product
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/products/[id]" as ProductAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Click "Delete" button
+activate Dashboard
+
+Dashboard -> Dashboard: Display confirmation dialog
+Admin -> Dashboard: Confirm deletion
+
+Dashboard -> ProductAPI: DELETE /api/admin/products/[id]
+activate ProductAPI
+
+ProductAPI -> DB: Delete product record
+activate DB
+DB --> ProductAPI: Return success
+deactivate DB
+
+ProductAPI --> Dashboard: Return success
+deactivate ProductAPI
+
+Dashboard --> Admin: Display success message\nand remove product from list
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 7: Manage Orders
+' ========================================
+@startuml UC7_ManageOrders
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC7: Manage Orders
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/orders" as OrderAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Click "Orders" tab
+activate Dashboard
+
+Dashboard -> OrderAPI: GET /api/admin/orders?page=1&status=pending
+activate OrderAPI
+
+OrderAPI -> DB: Query orders with pagination\n(50 per page)
+activate DB
+note right: Include orderItems,\nproducts, user data
+DB --> OrderAPI: Return orders data
+deactivate DB
+
+OrderAPI --> Dashboard: Return paginated orders
+deactivate OrderAPI
+
+Admin -> Dashboard: Click on order to view details
+Dashboard -> Dashboard: Display order details modal
+Dashboard --> Admin: Show order information\n(items, customer, address, payment)
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 8: Update Order Status
+' ========================================
+@startuml UC8_UpdateOrderStatus
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC8: Update Order Status
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/orders/[id]" as OrderAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Select order and change status
+activate Dashboard
+
+Admin -> Dashboard: Optionally add notes
+Admin -> Dashboard: Click "Update Status"
+
+Dashboard -> OrderAPI: PUT /api/admin/orders/[id]
+activate OrderAPI
+note right: Request body:\n{ status, notes }
+OrderAPI -> DB: Get current order with items
+activate DB
+DB --> OrderAPI: Return order data
+deactivate DB
+
+OrderAPI -> DB: Update order status and notes
+activate DB
+DB --> OrderAPI: Return updated order
+deactivate DB
+
+alt Status changed to 'cancelled'
+    OrderAPI -> DB: Restore stock for each order item
+    activate DB
+    DB --> OrderAPI: Stock updated
+    deactivate DB
+end
+
+alt Status changed from 'cancelled' to active
+    OrderAPI -> DB: Decrement stock for each order item
+    activate DB
+    DB --> OrderAPI: Stock updated
+    deactivate DB
+end
+
+OrderAPI --> Dashboard: Return updated order
+deactivate OrderAPI
+
+Dashboard --> Admin: Display success message\nand refresh order list
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 9: Create User Account
+' ========================================
+@startuml UC9_CreateUserAccount
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC9: Create User Account
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/users" as UserAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Fill user form\n(name, email, phone, password, address)
+activate Dashboard
+
+Dashboard -> Dashboard: Validate email format\nand password strength
+
+Admin -> Dashboard: Click "Create Account"
+
+Dashboard -> UserAPI: POST /api/admin/users
+activate UserAPI
+
+UserAPI -> UserAPI: Hash password with bcrypt (12 rounds)
+UserAPI -> DB: Check if email exists
+activate DB
+DB --> UserAPI: Email availability
+deactivate DB
+
+UserAPI -> DB: Create user record
+activate DB
+note right of DB: Store hashed password\nrole=user
+DB --> UserAPI: Return created user
+deactivate DB
+
+UserAPI --> Dashboard: Return user data
+deactivate UserAPI
+
+Dashboard --> Admin: Display success message\nand add user to list
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 10: Update User Information
+' ========================================
+@startuml UC10_UpdateUserInformation
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC10: Update User Information
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/users/[id]" as UserAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Select user and click "Edit"
+activate Dashboard
+
+Admin -> Dashboard: Modify user information\n(name, phone, governorate, area, address)
+Admin -> Dashboard: Click "Update User"
+
+Dashboard -> UserAPI: PUT /api/admin/users/[id]
+activate UserAPI
+
+UserAPI -> DB: Update user record
+activate DB
+note right: Update name, phone,\ngovernorate, area, address
+DB --> UserAPI: Return updated user
+deactivate DB
+
+UserAPI --> Dashboard: Return updated user
+deactivate UserAPI
+
+Dashboard --> Admin: Display success message\nand refresh user info
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 11: Delete User
+' ========================================
+@startuml UC11_DeleteUser
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC11: Delete User
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/users/[id]" as UserAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Click "Delete" button for user
+activate Dashboard
+
+Dashboard -> Dashboard: Display confirmation dialog
+Admin -> Dashboard: Confirm deletion
+
+Dashboard -> UserAPI: DELETE /api/admin/users/[id]
+activate UserAPI
+
+UserAPI -> DB: Perform cascade deletion
+activate DB
+note right of DB: Delete user, pets\norders, appointments\nmedical records
+DB --> UserAPI: Return success
+deactivate DB
+
+UserAPI --> Dashboard: Return success
+deactivate UserAPI
+
+Dashboard --> Admin: Display success message\nand remove user from list
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 12: Create Appointment
+' ========================================
+@startuml UC12_CreateAppointment
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC12: Create Appointment
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/appointments" as AppointmentAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Fill appointment form\n(owner name, phone, pet name, date, time, reason, notes)
+activate Dashboard
+
+Dashboard -> Dashboard: Validate form data
+
+Admin -> Dashboard: Click "Create Appointment"
+
+Dashboard -> AppointmentAPI: POST /api/admin/appointments
+activate AppointmentAPI
+
+AppointmentAPI -> AppointmentAPI: Check date/time availability
+
+AppointmentAPI -> DB: Create appointment record
+activate DB
+note right: Status='upcoming',\nassociate with user if provided
+DB --> AppointmentAPI: Return created appointment
+deactivate DB
+
+AppointmentAPI --> Dashboard: Return appointment data
+deactivate AppointmentAPI
+
+Dashboard --> Admin: Display success message\nand add to appointments list
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 13: Complete Appointment
+' ========================================
+@startuml UC13_CompleteAppointment
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC13: Complete Appointment
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/appointments/[id]" as AppointmentAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Select appointment and click "Complete"
+activate Dashboard
+
+Admin -> Dashboard: Enter completion price and payment method
+Admin -> Dashboard: Click "Mark as Completed"
+
+Dashboard -> AppointmentAPI: PUT /api/admin/appointments/[id]/complete
+activate AppointmentAPI
+
+AppointmentAPI -> DB: Update appointment
+activate DB
+note right: Set status='completed',\ncompletionPrice, paymentMethod
+DB --> AppointmentAPI: Return updated appointment
+deactivate DB
+
+AppointmentAPI --> Dashboard: Return updated appointment
+deactivate AppointmentAPI
+
+Dashboard --> Admin: Display success message\nand refresh appointment (green status)
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 14: Cancel Appointment
+' ========================================
+@startuml UC14_CancelAppointment
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC14: Cancel Appointment
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/appointments/[id]" as AppointmentAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Select appointment and click "Cancel"
+activate Dashboard
+
+Dashboard -> Dashboard: Optionally enter cancellation reason
+Admin -> Dashboard: Confirm cancellation
+
+Dashboard -> AppointmentAPI: PUT /api/admin/appointments/[id]/cancel
+activate AppointmentAPI
+
+AppointmentAPI -> DB: Update appointment status
+activate DB
+note right: Set status='cancelled',\nrecord cancellation timestamp
+DB --> AppointmentAPI: Return updated appointment
+deactivate DB
+
+AppointmentAPI --> Dashboard: Return updated appointment
+deactivate AppointmentAPI
+
+Dashboard --> Admin: Display success message\nand refresh appointment (red status)
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 15: Manage Hotel Rooms
+' ========================================
+@startuml UC15_ManageHotelRooms
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC15: Manage Hotel Rooms
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/hotel/rooms" as HotelAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Click "Hotel" tab
+activate Dashboard
+
+Admin -> Dashboard: Select room type filter (DOG/CAT/BIRD)
+
+Dashboard -> HotelAPI: GET /api/admin/hotel/rooms?type=DOG
+activate HotelAPI
+
+HotelAPI -> DB: Query rooms by type with reservations
+activate DB
+note right of DB: Include room status\nreservations for each room
+DB --> HotelAPI: Return rooms data
+deactivate DB
+
+HotelAPI --> Dashboard: Return rooms and reservations
+deactivate HotelAPI
+
+Dashboard --> Admin: Display rooms list with status\nand reservations for each room
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 16: Create Hotel Reservation
+' ========================================
+@startuml UC16_CreateHotelReservation
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC16: Create Hotel Reservation
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/hotel/reservations" as HotelAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Fill reservation form\n(room, owner name, phone, pet name, dates, services, notes)
+activate Dashboard
+
+Dashboard -> Dashboard: Validate form data
+
+Admin -> Dashboard: Click "Create Reservation"
+
+Dashboard -> HotelAPI: POST /api/admin/hotel/reservations
+activate HotelAPI
+
+HotelAPI -> DB: Check room availability for dates
+activate DB
+DB --> HotelAPI: Availability status
+deactivate DB
+
+alt Room available
+    HotelAPI -> DB: Create reservation record
+    activate DB
+    note right of DB: Status=booked\nextra services as JSON
+    DB --> HotelAPI: Return created reservation
+    deactivate DB
+    
+    HotelAPI -> DB: Update room status to OCCUPIED
+    activate DB
+    DB --> HotelAPI: Room updated
+    deactivate DB
+    
+    HotelAPI -> HotelAPI: Calculate booking cost breakdown
+    HotelAPI --> Dashboard: Return reservation with cost breakdown
+    deactivate HotelAPI
+else Room not available
+    HotelAPI --> Dashboard: Return error (room occupied)
+    deactivate HotelAPI
+end
+
+Dashboard --> Admin: Display success message\nand refresh hotel rooms view
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 17: Checkout Reservation
+' ========================================
+@startuml UC17_CheckoutReservation
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC17: Checkout Reservation
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/hotel/reservations/[id]/checkout" as HotelAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Select reservation and click "Checkout"
+activate Dashboard
+
+Admin -> Dashboard: Review cost breakdown\nSet extra service amounts\nSelect payment method
+Admin -> Dashboard: Click "Complete Checkout"
+
+Dashboard -> HotelAPI: PUT /api/admin/hotel/reservations/[id]/checkout
+activate HotelAPI
+note right: Request body:\n{ extraServiceAmounts, paymentMethod }
+
+HotelAPI -> HotelAPI: Calculate total nights\n(nights × room rate)
+HotelAPI -> HotelAPI: Calculate subtotal
+HotelAPI -> HotelAPI: Add pickup fee (if applicable)
+HotelAPI -> HotelAPI: Add dropoff fee (if applicable)
+HotelAPI -> HotelAPI: Add extra service amounts
+HotelAPI -> HotelAPI: Calculate total
+
+HotelAPI -> DB: Update reservation
+activate DB
+note right: Status='checked_out',\ntotal, paymentMethod,\ncheckout timestamp
+DB --> HotelAPI: Return updated reservation
+deactivate DB
+
+HotelAPI -> DB: Update room status to AVAILABLE
+activate DB
+DB --> HotelAPI: Room updated
+deactivate DB
+
+HotelAPI --> Dashboard: Return reservation with total
+deactivate HotelAPI
+
+Dashboard --> Admin: Display success message\nand refresh reservation details
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 18: Manage Pet Profiles
+' ========================================
+@startuml UC18_ManagePetProfiles
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC18: Manage Pet Profiles
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/users/[id]/pets" as PetAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Select user and view details
+activate Dashboard
+
+Dashboard -> PetAPI: GET /api/admin/users/[id]/pets
+activate PetAPI
+
+PetAPI -> DB: Query user's pets with medical records
+activate DB
+note right: Include vaccinations,\ndewormings, visits, weight
+DB --> PetAPI: Return pets data
+deactivate DB
+
+PetAPI --> Dashboard: Return pets with medical records
+deactivate PetAPI
+
+Admin -> Dashboard: Select pet to view profile
+Dashboard --> Admin: Display pet profile\n(basic info, medical records, pet code)
+deactivate Dashboard
+@enduml
+
+' ========================================
+' Use Case 19: Add Medical Records
+' ========================================
+@startuml UC19_AddMedicalRecords
+!theme plain
+skinparam sequenceMessageAlign center
+skinparam sequenceArrowThickness 2
+title UC19: Add Medical Records
+
+actor Admin as "Admin"
+participant "Admin Dashboard\n(Frontend)" as Dashboard
+participant "API: /api/admin/pets/[id]/medical-records" as MedicalAPI
+database "Database\n(Prisma)" as DB
+
+Admin -> Dashboard: Select pet and click "Add Record"
+activate Dashboard
+note right: Record type:\nVaccination/Deworming/\nClinic Visit/Weight
+
+Admin -> Dashboard: Fill record form\n(date, details, notes, next due date)
+Admin -> Dashboard: Click "Add Record"
+
+Dashboard -> MedicalAPI: POST /api/admin/pets/[id]/medical-records
+activate MedicalAPI
+note right: Request body:\n{ type, date, details, ... }
+
+MedicalAPI -> DB: Create medical record
+activate DB
+note right: Associate with pet ID
+DB --> MedicalAPI: Return created record
+deactivate DB
+
+MedicalAPI --> Dashboard: Return medical record
+deactivate MedicalAPI
+
+Dashboard --> Admin: Display success message\nand refresh medical records\n(most recent first)
+deactivate Dashboard
+@enduml
+
